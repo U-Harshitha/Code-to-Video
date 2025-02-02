@@ -3,18 +3,17 @@ import { ref } from 'vue'
 import CodeInput from './components/CodeInput.vue'
 import VariableVisualizer from './components/VariableVisualizer.vue'
 
-const cCode = ref('')
-const variables = ref([])
+const steps = ref([])
 
-const handleCodeSubmit = (parsedVariables: any) => {
-  variables.value = parsedVariables
+const handleCodeUpdate = (newSteps: any) => {
+  steps.value = newSteps
 }
 </script>
 
 <template>
   <div class="container">
-    <CodeInput @submitCode="handleCodeSubmit" />
-    <VariableVisualizer :variables="variables" />
+    <CodeInput @updateCode="handleCodeUpdate" />
+    <VariableVisualizer :steps="steps" />
   </div>
 </template>
 
