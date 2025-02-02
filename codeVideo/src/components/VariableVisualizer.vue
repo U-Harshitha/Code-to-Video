@@ -22,14 +22,14 @@ watch(() => props.variables, animateVariables, { deep: true })
       <div class="variable-name">{{ variable.name }}</div>
       
       <!-- Single box for int and float -->
-      <div v-if="variable.type === 'int' || variable.type === 'float'" class="box">
-        {{ variable.name }}
+      <div v-if="!variable.isArray" class="box">
+        {{ variable.value }}
       </div>
 
       <!-- Array visualization -->
       <div v-if="variable.isArray" class="array-container">
-        <div v-for="n in variable.size" :key="n" class="box">
-          {{ variable.name }}[{{ n-1 }}]
+        <div v-for="(value, i) in variable.values" :key="i" class="box">
+          {{ value }}
         </div>
       </div>
     </div>
@@ -55,6 +55,11 @@ watch(() => props.variables, animateVariables, { deep: true })
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.variable-name {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
 }
 
 .box {

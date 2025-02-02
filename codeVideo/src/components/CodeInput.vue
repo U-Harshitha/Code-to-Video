@@ -7,39 +7,64 @@ const cCode = ref('')
 const parseCode = () => {
   const variables = []
   const lines = cCode.value.split('\n')
+  
+  let inMainFunction = false
 
   lines.forEach(line => {
     line = line.trim()
-
-    // Ignore function definitions (e.g., int main())
-    if (line.match(/^\s*\w+\s+main\s*\(/)) return
-
-    // Match integer arrays (e.g., int a[8];)
-    const arrayMatch = line.match(/^\s*int\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\[(\d+)\]\s*;/)
-    if (arrayMatch) {
-      const [, name, size] = arrayMatch
-      variables.push({ type: 'int', name, isArray: true, size: parseInt(size) })
+    
+    // Skip includes and empty lines
+    if (line.startsWith('#include') || !line) return
+    
+    // Check if we're entering main function
+    if (line.match(/^\s*int\s+main\s*\(/)) {
+      inMainFunction = true
+      return
+    }
+    
+    // Only parse declarations inside main
+    if (!inMainFunction) return
+    
+    // Check for end of main
+    if (line.includes('return') || line === '}') {
+      inMainFunction = false
       return
     }
 
-    // Match multiple integer declarations (e.g., int a, b, sum = 0;)
-    const intMatch = line.match(/^int\s+([^;]+);/)
-    if (intMatch) {
-      const declarations = intMatch[1].split(',').map(v => v.trim().split('=')[0].trim())
-      declarations.forEach(name => {
-        if (name) variables.push({ type: 'int', name })
+    // Match combined declarations (e.g., int a[8], b, sum = 0;)
+    const combinedMatch = line.match(/^\s*(\w+)\s+([^;]+);/)
+    if (combinedMatch) {
+      const type = combinedMatch[1]
+      const declarations = combinedMatch[2].split(',')
+      
+      declarations.forEach(declaration => {
+        declaration = declaration.trim()
+        
+        // Handle arrays (e.g., a[8])
+        const arrayMatch = declaration.match(/([a-zA-Z_][a-zA-Z0-9_]*)\s*\[(\d+)\]/)
+        if (arrayMatch) {
+          const [, name, size] = arrayMatch
+          variables.push({ 
+            type, 
+            name, 
+            isArray: true, 
+            size: parseInt(size),
+            values: new Array(parseInt(size)).fill(0)
+          })
+          return
+        }
+        
+        // Handle regular variables with or without initialization
+        const varMatch = declaration.match(/([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=\s*([^,\s]+))?/)
+        if (varMatch) {
+          const [, name, value] = varMatch
+          variables.push({ 
+            type, 
+            name, 
+            value: value ? parseFloat(value) : 0
+          })
+        }
       })
-      return
-    }
-
-    // Match float declarations (e.g., float hh = 0;)
-    const floatMatch = line.match(/^float\s+([^;]+);/)
-    if (floatMatch) {
-      const declarations = floatMatch[1].split(',').map(v => v.trim().split('=')[0].trim())
-      declarations.forEach(name => {
-        if (name) variables.push({ type: 'float', name })
-      })
-      return
     }
   })
 
@@ -49,7 +74,15 @@ const parseCode = () => {
 
 <template>
   <div class="code-input">
-    <textarea v-model="cCode" placeholder="Paste your C code here..."></textarea>
+    <textarea 
+      v-model="cCode" 
+      placeholder="#include <stdio.h>
+
+int main() {
+    // Your C code here
+    return 0;
+}"
+    ></textarea>
     <button @click="parseCode" class="submit-btn">Visualize Code</button>
   </div>
 </template>
